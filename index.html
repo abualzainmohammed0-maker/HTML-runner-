@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTML Runner</title>
+<style>
+  :root{
+    --bg:#0f1115;
+    --panel:#161a21;
+    --panel-2:#1c212a;
+    --border:#2a313d;
+    --text:#e6e9ef;
+    --muted:#8b95a7;
+    --accent:#4f8cff;
+    --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 14px;
+    background:var(--panel);
+    border-bottom:1px solid var(--border);
+    flex:0 0 auto;
+  }
+  header .logo{
+    font-weight:700;font-size:15px;letter-spacing:.3px;
+    display:flex;align-items:center;gap:8px;margin-right:auto;
+  }
+  header .logo .dot{
+    width:10px;height:10px;border-radius:50%;
+    background:linear-gradient(135deg,#4f8cff,#a855f7);
+    box-shadow:0 0 12px rgba(79,140,255,.7);
+  }
+  button{
+    font:inherit;font-size:13px;font-weight:600;
+    color:var(--text);
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:8px 14px;
+    cursor:pointer;
+    display:inline-flex;align-items:center;gap:7px;
+    transition:background .15s,border-color .15s,transform .05s;
+    white-space:nowrap;
+  }
+  button:hover{background:#232a35;border-color:#3a4453}
+  button:active{transform:translateY(1px)}
+  button.primary{
+    background:var(--accent);border-color:var(--accent);color:#fff;
+  }
+  button.primary:hover{background:#3d7cf5;border-color:#3d7cf5}
+  .toggle{
+    display:flex;align-items:center;gap:7px;
+    font-size:13px;color:var(--muted);user-select:none;cursor:pointer;
+    padding:8px 12px;border:1px solid var(--border);border-radius:8px;
+    background:var(--panel-2);
+  }
+  .toggle input{accent-color:var(--accent);cursor:pointer;margin:0}
+
+  /* ---------- Main split ---------- */
+  main{
+    flex:1 1 auto;display:flex;min-height:0;overflow:hidden;
+  }
+  .pane{display:flex;flex-direction:column;min-width:0;min-height:0}
+
+  #editorPane{flex:0 0 45%;background:var(--panel)}
+  #previewPane{flex:1 1 auto;background:var(--panel)}
+
+  /* ---------- Tabs ---------- */
+  .tabbar{
+    display:flex;align-items:center;gap:4px;
+    padding:6px 8px;background:var(--panel);
+    border-bottom:1px solid var(--border);
+    flex:0 0 auto;
+  }
+  .tab{
+    font-size:12.5px;font-weight:600;color:var(--muted);
+    background:transparent;border:1px solid transparent;
+    padding:6px 12px;border-radius:7px;cursor:pointer;
+  }
+  .tab:hover{background:var(--panel-2);color:var(--text)}
+  .tab.active{
+    background:var(--panel-2);color:var(--text);
+    border-color:var(--border);
+  }
+  .tab .lang{opacity:.65;font-weight:500}
+
+  /* ---------- Editor ---------- */
+  .editors{position:relative;flex:1 1 auto;min-height:0}
+  textarea{
+    position:absolute;inset:0;
+    width:100%;height:100%;
+    resize:none;border:0;outline:none;
+    background:#12161d;color:#dbe2ee;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    font-size:13.5px;line-height:1.6;
+    padding:14px 16px;
+    tab-size:2;
+    display:none;
+    caret-color:var(--accent);
+  }
+  textarea.active{display:block}
+  textarea::selection{background:rgba(79,140,255,.35)}
+
+  /* ---------- Divider ---------- */
+  #divider{
+    flex:0 0 6px;
+    background:var(--border);
+    cursor:col-resize;
+    position:relative;
+    transition:background .15s;
+  }
+  #divider:hover,#divider.dragging{background:var(--accent)}
+  #divider::after{
+    content:"";position:absolute;top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    width:2px;height:34px;border-radius:2px;background:rgba(255,255,255,.25);
+  }
+
+  /* ---------- Preview ---------- */
+  .preview-bar{
+    display:flex;align-items:center;gap:8px;
+    padding:6px 8px 6px 12px;
+    background:var(--panel);
+    border-bottom:1px solid var(--border);
+    flex:0 0 auto;
+    font-size:12.5px;
+  }
+  .preview-bar .label{color:var(--muted);font-weight:600;margin-right:auto}
+  .status{
+    font-size:12px;color:var(--muted);
+    max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .status.error{color:var(--danger);font-weight:600}
+  .status.ok{color:#4ade80}
+  #frameWrap{flex:1 1 auto;min-height:0;position:relative;background:#fff}
+  iframe{
+    position:absolute;inset:0;
+    width:100%;height:100%;border:0;display:block;background:#fff;
+  }
+
+  /* ---------- Fullscreen ---------- */
+  #previewPane:fullscreen{
+    background:var(--panel);
+    width:100vw;height:100vh;
+  }
+  #previewPane:-webkit-full-screen{
+    background:var(--panel);
+    width:100vw;height:100vh;
+  }
+  #previewPane:fullscreen .preview-bar,
+  #previewPane:-webkit-full-screen .preview-bar{
+    padding:10px 14px;
+  }
+
+  /* ---------- Mobile ---------- */
+  @media (max-width:760px){
+    main{flex-direction:column}
+    #editorPane{flex:0 0 50%}
+    #previewPane{flex:1 1 auto}
+    #divider{flex:0 0 6px;cursor:row-resize}
+    header{flex-wrap:wrap}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="dot"></span>HTML Runner</div>
+
+  <label class="toggle" title="Re-run automatically as you type">
+    <input type="checkbox" id="autoRun"> Auto-run
+  </label>
+
+  <button id="fsBtn" title="Fullscreen preview (F11-like)">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M16 21h3a2 2 0 0 0 2-2v-3M8 21H5a2 2 0 0 1-2-2v-3"/>
+    </svg>
+    <span id="fsLabel">Fullscreen</span>
+  </button>
+
+  <button id="runBtn" class="primary" title="Run (Ctrl/Cmd + Enter)">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+    Run
+  </button>
+</header>
+
+<main>
+  <section class="pane" id="editorPane">
+    <div class="tabbar">
+      <button class="tab active" data-lang="html">HTML <span class="lang">.html</span></button>
+      <button class="tab" data-lang="css">CSS <span class="lang">.css</span></button>
+      <button class="tab" data-lang="js">JS <span class="lang">.js</span></button>
+    </div>
+    <div class="editors">
+      <textarea id="ta-html" spellcheck="false" class="active"></textarea>
+      <textarea id="ta-css" spellcheck="false"></textarea>
+      <textarea id="ta-js" spellcheck="false"></textarea>
+    </div>
+  </section>
+
+  <div id="divider" title="Drag to resize"></div>
+
+  <section class="pane" id="previewPane">
+    <div class="preview-bar">
+      <span class="label">Preview</span>
+      <span class="status" id="status">Ready</span>
+      <button id="clearBtn" title="Clear the console status">Clear</button>
+    </div>
+    <div id="frameWrap">
+      <iframe id="frame" sandbox="allow-scripts allow-modals allow-forms allow-popups allow-pointer-lock"></iframe>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ Default sample code ============ */
+  const DEFAULTS = {
+    html:
+`<h1>Hello, world 👋</h1>
+<p>Edit the code on the left, then hit <strong>Run</strong>.</p>
+<button id="btn">Click me</button>`,
+    css:
+`body{
+  font-family: system-ui, sans-serif;
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  margin: 0;
+  background: #0f1115;
+  color: #e6e9ef;
+  text-align: center;
+}
+h1 { margin-bottom: .2em; }
+button{
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 8px;
+  background: #4f8cff;
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+}
+button:hover { background: #3d7cf5; }`,
+    js:
+`let n = 0;
+const btn = document.getElementById('btn');
+
+btn.addEventListener('click', () => {
+  n++;
+  btn.textContent = 'Clicked ' + n + (n === 1 ? ' time' : ' times');
+});`
+  };
+
+  /* ============ Elements ============ */
+  const tas = {
+    html: document.getElementById('ta-html'),
+    css:  document.getElementById('ta-css'),
+    js:   document.getElementById('ta-js')
+  };
+  const tabs       = Array.from(document.querySelectorAll('.tab'));
+  const frame      = document.getElementById('frame');
+  const runBtn     = document.getElementById('runBtn');
+  const fsBtn      = document.getElementById('fsBtn');
+  const fsLabel    = document.getElementById('fsLabel');
+  const autoRun    = document.getElementById('autoRun');
+  const statusEl   = document.getElementById('status');
+  const clearBtn   = document.getElementById('clearBtn');
+  const divider    = document.getElementById('divider');
+  const editorPane = document.getElementById('editorPane');
+  const previewPane= document.getElementById('previewPane');
+  const mainEl     = document.querySelector('main');
+
+  /* ============ State / persistence ============ */
+  const STORE = 'html-runner-v1';
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORE)) || {}; } catch(e){ saved = {}; }
+
+  Object.keys(tas).forEach(lang => {
+    tas[lang].value = (typeof saved[lang] === 'string') ? saved[lang] : DEFAULTS[lang];
+  });
+
+  let saveTimer = null;
+  function persist(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      try {
+        localStorage.setItem(STORE, JSON.stringify({
+          html: tas.html.value,
+          css:  tas.css.value,
+          js:   tas.js.value
+        }));
+      } catch(e){ /* storage may be unavailable */ }
+    }, 300);
+  }
+
+  /* ============ Tabs ============ */
+  let activeLang = 'html';
+  function selectTab(lang){
+    activeLang = lang;
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.lang === lang));
+    Object.keys(tas).forEach(l => tas[l].classList.toggle('active', l === lang));
+    tas[lang].focus();
+  }
+  tabs.forEach(t => t.addEventListener('click', () => selectTab(t.dataset.lang)));
+
+  /* ============ Build & run ============ */
+  function buildDocument(){
+    const html = tas.html.value;
+    const css  = tas.css.value;
+    const js   = tas.js.value;
+
+    return '<!DOCTYPE html>\n' +
+      '<html>\n<head>\n<meta charset="utf-8">\n' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+      '<style>\n' + css + '\n</style>\n</head>\n<body>\n' +
+      html +
+      '\n<script>\n' +
+      'window.onerror = function(msg, src, line, col){\n' +
+      '  parent.postMessage({ type:"runner-error", message: String(msg) + "  (line " + line + ":" + col + ")" }, "*");\n' +
+      '  return false;\n' +
+      '};\n' +
+      'window.addEventListener("unhandledrejection", function(e){\n' +
+      '  parent.postMessage({ type:"runner-error", message: "Unhandled promise rejection: " + (e.reason && e.reason.message ? e.reason.message : e.reason) }, "*");\n' +
+      '});\n' +
+      'try {\n' + js + '\n} catch(err){\n' +
+      '  parent.postMessage({ type:"runner-error", message: err.message }, "*");\n' +
+      '}\n' +
+      '<\/script>\n</body>\n</html>';
+  }
+
+  function setStatus(text, kind){
+    statusEl.textContent = text;
+    statusEl.className = 'status' + (kind ? ' ' + kind : '');
+  }
+
+  function run(){
+    setStatus('Running…', '');
+    // Assigning srcdoc reloads the iframe with the new document.
+    frame.srcdoc = buildDocument();
+    persist();
+  }
+
+  runBtn.addEventListener('click', run);
+  clearBtn.addEventListener('click', () => setStatus('Ready', ''));
+
+  /* ============ Error reporting from the iframe ============ */
+  window.addEventListener('message', (e) => {
+    const d = e.data;
+    if (d && d.type === 'runner-error'){
+      setStatus('⚠ ' + d.message, 'error');
+    }
+  });
+
+  /* ============ Auto-run (debounced) ============ */
+  let autoTimer = null;
+  function scheduleAutoRun(){
+    if (!autoRun.checked) return;
+    clearTimeout(autoTimer);
+    autoTimer = setTimeout(run, 600);
+  }
+
+  Object.keys(tas).forEach(lang => {
+    tas[lang].addEventListener('input', () => {
+      persist();
+      scheduleAutoRun();
+    });
+    // Tab key inserts two spaces instead of moving focus
+    tas[lang].addEventListener('keydown', (e) => {
+      if (e.key === 'Tab'){
+        e.preventDefault();
+        const ta = e.target;
+        const s = ta.selectionStart, en = ta.selectionEnd;
+        ta.value = ta.value.slice(0, s) + '  ' + ta.value.slice(en);
+        ta.selectionStart = ta.selectionEnd = s + 2;
+        persist();
+        scheduleAutoRun();
+      }
+    });
+  });
+
+  /* ============ Keyboard shortcut: Ctrl/Cmd + Enter ============ */
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter'){
+      e.preventDefault();
+      run();
+    }
+  });
+
+  /* ============ Fullscreen preview ============ */
+  function isFullscreen(){
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+  function toggleFullscreen(){
+    if (!isFullscreen()){
+      const req = previewPane.requestFullscreen || previewPane.webkitRequestFullscreen;
+      if (req) {
+        const p = req.call(previewPane);
+        if (p && p.catch) p.catch(() => setStatus('Fullscreen was blocked by the browser', 'error'));
+      }
+    } else {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if (exit) exit.call(document);
+    }
+  }
+  fsBtn.addEventListener('click', toggleFullscreen);
+
+  function onFsChange(){
+    const on = isFullscreen();
+    fsLabel.textContent = on ? 'Exit Fullscreen' : 'Fullscreen';
+    fsBtn.title = on ? 'Exit fullscreen (Esc)' : 'Fullscreen preview';
+    // Give the layout a tick to settle after the fullscreen transition
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 60);
+  }
+  document.addEventListener('fullscreenchange', onFsChange);
+  document.addEventListener('webkitfullscreenchange', onFsChange);
+
+  // Esc naturally exits fullscreen, but handle the case where it doesn't
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isFullscreen()) onFsChange();
+  });
+
+  /* ============ Draggable divider ============ */
+  let dragging = false;
+  function startDrag(e){
+    if (window.matchMedia('(max-width:760px)').matches) return; // stacked on mobile
+    dragging = true;
+    divider.classList.add('dragging');
+    divider.setPointerCapture && divider.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  }
+  function moveDrag(e){
+    if (!dragging) return;
+    const rect = mainEl.getBoundingClientRect();
+    let pct = ((e.clientX - rect.left) / rect.width) * 100;
+    pct = Math.max(15, Math.min(85, pct));
+    editorPane.style.flex = '0 0 ' + pct + '%';
+    previewPane.style.flex = '1 1 auto';
+  }
+  function endDrag(e){
+    if (!dragging) return;
+    dragging = false;
+    divider.classList.remove('dragging');
+    if (divider.releasePointerCapture && e.pointerId != null){
+      try { divider.releasePointerCapture(e.pointerId); } catch(err){}
+    }
+  }
+  divider.addEventListener('pointerdown', startDrag);
+  divider.addEventListener('pointermove', moveDrag);
+  divider.addEventListener('pointerup', endDrag);
+  divider.addEventListener('pointercancel', endDrag);
+  // Double-click the divider to reset the split
+  divider.addEventListener('dblclick', () => {
+    editorPane.style.flex = '0 0 45%';
+    previewPane.style.flex = '1 1 auto';
+  });
+
+  /* ============ Boot ============ */
+  selectTab('html');
+  run();
+})();
+</script>
+</body>
+</html>
